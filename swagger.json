@@ -1,0 +1,332 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "This is service API",
+        "description": "All restful api",
+        "version": "1.0.0"
+    },
+    "host": "",
+    "basePath": "/",
+    "schemes": [
+        "http"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json",
+        "application/xml",
+        "text/plain",
+        "text/serialized"
+    ],
+    "paths": {
+		"/hdmp/common/block": {
+			"get": {
+				"tags": [
+					"Common.Region"
+				],
+				"summary": "版块列表",
+				"consumes": [
+					"application/json"
+				],
+				"produces": [
+					"application/json",
+					"application/xml",
+					"text/plain",
+					"text/serialized"
+				],
+				"parameters": [{
+						"name": "id",
+						"in": "query",
+						"description": "版块id",
+						"required": false,
+						"type": "integer"
+					},
+					{
+						"name": "city_id",
+						"in": "query",
+						"description": "城市id",
+						"required": false,
+						"type": "integer"
+					},
+					{
+						"name": "district_id",
+						"in": "query",
+						"description": "区域id",
+						"required": false,
+						"type": "integer"
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"description": "第几页，默认1",
+						"required": false,
+						"type": "integer"
+					},
+					{
+						"name": "page_size",
+						"in": "query",
+						"description": "每页数量，默认10",
+						"required": false,
+						"type": "integer"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "正常响应",
+						"schema": {
+							"$ref": "#/definitions/BlockIndex"
+						}
+					}
+				}
+			},
+			"post": {
+				"tags": [
+					"Common.Region"
+				],
+				"summary": "新增版块",
+				"consumes": [
+					"application/json"
+				],
+				"produces": [
+					"application/json",
+					"application/xml",
+					"text/plain",
+					"text/serialized"
+				],
+				"parameters": [{
+					"name": "body",
+					"in": "body",
+					"description": "body",
+					"schema": {
+						"required": [
+							"city_id,name,pinyin"
+						],
+						"properties": {
+							"city_id": {
+								"description": "城市id",
+								"type": "integer",
+								"example": "1"
+							},
+							"district_id": {
+								"description": "区域id",
+								"type": "integer",
+								"example": "1"
+							},
+							"name": {
+								"description": "版块名字",
+								"type": "string",
+								"example": "test"
+							},
+							"pinyin": {
+								"description": "拼音",
+								"type": "string",
+								"example": "sh"
+							},
+							"longitude": {
+								"description": "经度",
+								"type": "string",
+								"example": "116.24836317895"
+							},
+							"latitude": {
+								"description": "纬度",
+								"type": "string",
+								"example": "39.939063749359"
+							},
+							"avg_price": {
+								"description": "均价",
+								"type": "string",
+								"example": "100"
+							},
+							"sale_total": {
+								"description": "总价",
+								"type": "string",
+								"example": "1000000"
+							}
+						}
+					}
+				}],
+				"responses": {
+					"200": {
+						"description": "正常响应",
+						"schema": {
+							"$ref": "#/definitions/blockCreate"
+						}
+					}
+				}
+			}
+		},	
+    "/hdmp/common/block/{id}": {
+            "get": {
+                "tags": [
+                    "Common.Region"
+                ],
+                "summary": "\u7248\u5757\u8be6\u60c5",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "application/xml",
+                    "text/plain",
+                    "text/serialized"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "\u7248\u5757ID",
+                        "required": true,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "\u6b63\u5e38\u54cd\u5e94",
+                        "schema": {
+                            "$ref": "#/definitions/blockDetail"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Common.Region"
+                ],
+                "summary": "\u66f4\u65b0\u7248\u5757",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "application/xml",
+                    "text/plain",
+                    "text/serialized"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "\u533a\u57dfid",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "body",
+                        "schema": {
+                            "properties": {
+                                "city_id": {
+                                    "description": "\u57ce\u5e02id",
+                                    "type": "integer",
+                                    "example": "1"
+                                },
+                                "district_id": {
+                                    "description": "\u533a\u57dfid",
+                                    "type": "integer",
+                                    "example": "1"
+                                },
+                                "name": {
+                                    "description": "\u533a\u57df\u540d\u5b57",
+                                    "type": "string",
+                                    "example": "test"
+                                },
+                                "pinyin": {
+                                    "description": "\u62fc\u97f3",
+                                    "type": "string",
+                                    "example": "sh"
+                                },
+                                "longitude": {
+                                    "description": "\u7ecf\u5ea6",
+                                    "type": "string",
+                                    "example": "116.24836317895"
+                                },
+                                "latitude": {
+                                    "description": "\u7eac\u5ea6",
+                                    "type": "string",
+                                    "example": "39.939063749359"
+                                },
+                                "avg_price": {
+                                    "description": "\u5747\u4ef7",
+                                    "type": "string",
+                                    "example": "100"
+                                },
+                                "sale_total": {
+                                    "description": "\u603b\u4ef7",
+                                    "type": "string",
+                                    "example": "1000000"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "\u6b63\u5e38\u54cd\u5e94",
+                        "schema": {
+                            "$ref": "#/definitions/blockCreate"
+                        }
+                    }
+                }
+            }
+        }
+	},
+    "definitions": {
+    "BlockIndex": {
+            "title": "block index object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "default": 0
+                },
+                "msg": {
+                    "type": "string",
+                    "default": "success"
+                },
+                "data": {
+                    "type": "object",
+                    "example": {
+                        "total_record_num": 4451,
+                        "total_page_num": 446,
+                        "list": [
+                            {
+                                "id": 988,
+                                "name": "\u4e5d\u5821\u5ba2\u8fd0\u4e2d\u5fc3",
+                                "city_id": 3,
+                                "sale_total": "57",
+                                "uuid": "63206e0c-72c5-5095-9140-87c6f3e0da4a",
+                                "avg_price": "14962",
+                                "coordinate_set": "120.273101,30.316043;120.273065,30.314702;120.272975,30.312941;120.272867,30.311164;",
+                                "site_from": "lian",
+                                "zone_id": 988,
+                                "level": 3,
+                                "latitude": "30.313611",
+                                "longitude": "120.291911"
+                            }
+                        ]
+                    }
+                }
+            },
+            "type": "object"
+        },
+	 "blockCreate": {
+            "title": "block store object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "default": 0
+                },
+                "msg": {
+                    "type": "string",
+                    "default": "success"
+                },
+                "data": {
+                    "type": "object",
+                    "default": 425
+                }
+            },
+            "type": "object"
+        }
+	}
+}
