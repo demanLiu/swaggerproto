@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -87,7 +88,10 @@ type TemplateValue struct {
 	ResponseData map[string]interface{}
 }
 
+var objectId int
+
 func main() {
+	objectId = 1
 	data, err := ioutil.ReadFile("swagger.json")
 	if err != nil {
 		log.Fatal(err)
@@ -106,22 +110,9 @@ func main() {
 	fmt.Println(responseProperties["data"].Type)
 	responseData := responseProperties["data"].Example
 
-	responseRes := make(map[string]interface{})
-	var valueType interface{}
-	for key, value := range responseData {
-		valueType = reflect.ValueOf(value).Kind()
-		if valueType == reflect.Slice {
-			a := value.([]interface{})
-			fmt.Println(a[0])
-			responseRes[key] = "repeated ResponseObject"
-		} else if valueType == reflect.Map {
-			responseRes[key] = "ResponseObject"
-		} else {
-			responseRes[key] = "string"
-		}
-	}
+	responseRes := handleResponse(responseData)
 
-	fmt.Println("dsfds")
+	fmt.Printf("objectId:%d \n", objectId)
 	fmt.Println(responseRes)
 	templateValue := TemplateValue{"hello", paramters, responseData}
 	tmpl := template.New("proto")
@@ -182,4 +173,32 @@ func checkFileIsExist(filename string) bool {
 		exist = false
 	}
 	return exist
+}
+func getObjectId(objectId *int) int {
+	tmp := *objectId
+	*objectId++
+	return tmp
+}
+func handleResponse(responseData map[string]interface{}) map[string]interface{} {
+	responseRes := make(map[string]interface{})
+	subObject := make(map[string]interface{})
+	var valueType interface{}
+	//now can't support n (n>2) demensions
+	for key, value := range responseData {
+		valueType = reflect.ValueOf(value).Kind()
+		if valueType == reflect.Slice {
+			responseArr := value.([]interface{})
+			tempData := responseArr[0].(map[string]interface{})
+			for subKey, subVal := range tempData {
+				fmt.Println(subVal)
+				subObject[subKey] = "string"
+			}
+			responseRes[key] = "repeated ResponseObject" + strconv.Itoa(getObjectId(&objectId))
+		} else if valueType == reflect.Map {
+			responseRes[key] = "ResponseObject"
+		} else {
+			responseRes[key] = "string"
+		}
+	}
+	return responseRes
 }
