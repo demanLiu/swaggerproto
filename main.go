@@ -2,10 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
 	"os"
+	"reflect"
 	"strings"
 )
 
@@ -42,9 +44,9 @@ type Schema struct {
 	Properties map[string]Property `json:"properties"`
 }
 type Property struct {
-	Type    string      `json:"type"`
-	Default interface{} `json:"default"`
-	Example interface{} `json:"example"`
+	Type    string                 `json:"type"`
+	Default interface{}            `json:"default"`
+	Example map[string]interface{} `json:"example"`
 }
 type DeContent struct {
 	Title      string              `json:"title"`
@@ -54,29 +56,24 @@ type DeContent struct {
 const tpl = `
 syntax = "proto3";
 package {{.PackageName}};
-
 service CommunityCleanedSvc {
     rpc Find (RequestById) returns (CommunityCleaned) {}
     rpc Search (RequestByQuery) returns (CommunityCleanedList) {}
 }
-
 message RequestById {
     string id = 1;
     string filter = 2;
 }
-
 message RequestByQuery {
 	{{range $i ,$v :=.Parameters}}
 	{{$v.Type}}  {{$v.Name}} = {{AddOne $i}}
 	{{end}}
 }
-
 message CommunityCleaned {
-	{{range $i ,$v :=.Parameters}}
-	{{$v.Type}}  {{$v.Name}} = {{AddOne $i}}
+	{{range $i,$v :=.ResponseData}}
+		{{$v}} {{$i}}
 	{{end}}
 }
-
 message CommunityCleanedList {
     string total_record_num = 1;
     string total_page_num = 2;
@@ -85,8 +82,9 @@ message CommunityCleanedList {
 `
 
 type TemplateValue struct {
-	PackageName string
-	Parameters  []Parameter
+	PackageName  string
+	Parameters   []Parameter
+	ResponseData map[string]interface{}
 }
 
 func main() {
@@ -104,9 +102,28 @@ func main() {
 	definitionIndex := strings.Split(responses.Schema["$ref"], "/")
 	index := definitionIndex[len(definitionIndex)-1]
 	responseProperties := swagger.Definitions[index].Properties
-	responseProperties["data"].Type
+	//TODO 根据类型判断
+	fmt.Println(responseProperties["data"].Type)
+	responseData := responseProperties["data"].Example
 
-	templateValue := TemplateValue{"hello", paramters}
+	responseRes := make(map[string]interface{})
+	var valueType interface{}
+	for key, value := range responseData {
+		valueType = reflect.ValueOf(value).Kind()
+		if valueType == reflect.Slice {
+			a := value.([]interface{})
+			fmt.Println(a[0])
+			responseRes[key] = "repeated ResponseObject"
+		} else if valueType == reflect.Map {
+			responseRes[key] = "ResponseObject"
+		} else {
+			responseRes[key] = "string"
+		}
+	}
+
+	fmt.Println("dsfds")
+	fmt.Println(responseRes)
+	templateValue := TemplateValue{"hello", paramters, responseData}
 	tmpl := template.New("proto")
 	tmpl.Funcs(template.FuncMap{"AddOne": addOne})
 	tmpl.Parse(tpl)
@@ -122,6 +139,10 @@ func main() {
 		log.Fatal(err1)
 	}
 	tmpl.Execute(f, templateValue)
+	// err1 = tmpl.Execute(os.Stdout, templateValue)
+	if err1 != nil {
+		log.Fatal(err1)
+	}
 	// for index, paramter := range paramters {
 	// 	fmt.Println(index)
 	// 	fmt.Println(paramter.Name)
