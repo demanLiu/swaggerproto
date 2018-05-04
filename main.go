@@ -71,14 +71,13 @@ message RequestByQuery {
 	{{end}}
 }
 message CommunityCleaned {
-	{{range $i,$v :=.ResponseData}}
-		{{$v}} {{$i}}
-	{{end}}
 }
 message CommunityCleanedList {
-    string total_record_num = 1;
-    string total_page_num = 2;
-    repeated CommunityCleaned data = 3;
+	{{$inx := Var 0}}
+	{{range $i,$v :=.ResponseData}}
+		{{$inx.Set (AddOne $inx.Value)}}
+		{{$v}} {{$i}} = {{$inx.Value}}
+	{{end}}
 }
 `
 
@@ -109,14 +108,15 @@ func main() {
 	//TODO 根据类型判断
 	fmt.Println(responseProperties["data"].Type)
 	responseData := responseProperties["data"].Example
-
-	responseRes := handleResponse(responseData)
+	responseRes := make(map[string]interface{})
+	handleResponse(responseData, &responseRes)
 
 	fmt.Printf("objectId:%d \n", objectId)
 	fmt.Println(responseRes)
-	templateValue := TemplateValue{"hello", paramters, responseData}
+	templateValue := TemplateValue{"hello", paramters, responseRes}
 	tmpl := template.New("proto")
 	tmpl.Funcs(template.FuncMap{"AddOne": addOne})
+	tmpl.Funcs(template.FuncMap{"Var": newVariable})
 	tmpl.Parse(tpl)
 	filename := "./tmpProto"
 	var f *os.File
@@ -130,7 +130,7 @@ func main() {
 		log.Fatal(err1)
 	}
 	tmpl.Execute(f, templateValue)
-	// err1 = tmpl.Execute(os.Stdout, templateValue)
+	err1 = tmpl.Execute(os.Stdout, templateValue)
 	if err1 != nil {
 		log.Fatal(err1)
 	}
@@ -167,6 +167,19 @@ func addOne(i int) int {
 	return i + 1
 }
 
+type variable struct {
+	Value interface{}
+}
+
+func (v *variable) Set(value interface{}) string {
+	v.Value = value
+	return ""
+}
+
+func newVariable(initialValue interface{}) *variable {
+	return &variable{initialValue}
+}
+
 func checkFileIsExist(filename string) bool {
 	var exist = true
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
@@ -174,31 +187,30 @@ func checkFileIsExist(filename string) bool {
 	}
 	return exist
 }
-func getObjectId(objectId *int) int {
-	tmp := *objectId
-	*objectId++
+func getObjectID(objectID *int) int {
+	tmp := *objectID
+	*objectID++
 	return tmp
 }
-func handleResponse(responseData map[string]interface{}) map[string]interface{} {
-	responseRes := make(map[string]interface{})
-	subObject := make(map[string]interface{})
+func handleResponse(data map[string]interface{}, res *map[string]interface{}) {
 	var valueType interface{}
 	//now can't support n (n>2) demensions
-	for key, value := range responseData {
+	for key, value := range data {
 		valueType = reflect.ValueOf(value).Kind()
 		if valueType == reflect.Slice {
 			responseArr := value.([]interface{})
 			tempData := responseArr[0].(map[string]interface{})
-			for subKey, subVal := range tempData {
-				fmt.Println(subVal)
-				subObject[subKey] = "string"
-			}
-			responseRes[key] = "repeated ResponseObject" + strconv.Itoa(getObjectId(&objectId))
+			// subObject := make(map[string]interface{})
+			fmt.Println(tempData)
+			// subKey = "repeated ResponseObject" + strconv.Itoa(getObjectID(&objectId))
+			// subObject[subKey] = tempData
+			// *res[key] = subObject
+			// handleResponse(tempData)
+			(*res)[key] = "repeated ResponseObject" + strconv.Itoa(getObjectID(&objectId))
 		} else if valueType == reflect.Map {
-			responseRes[key] = "ResponseObject"
+			(*res)[key] = "ResponseObject"
 		} else {
-			responseRes[key] = "string"
+			(*res)[key] = "string"
 		}
 	}
-	return responseRes
 }
