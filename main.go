@@ -70,15 +70,15 @@ message RequestByQuery {
 	{{$v.Type}}  {{$v.Name}} = {{AddOne $i}}
 	{{end}}
 }
-message CommunityCleaned {
-}
-message CommunityCleanedList {
+{{range $msgName,$item := .ResponseData}}
+message {{$msgName}} {
 	{{$inx := Var 0}}
-	{{range $i,$v :=.ResponseData}}
+	{{range $i,$v := $item}}
 		{{$inx.Set (AddOne $inx.Value)}}
 		{{$v}} {{$i}} = {{$inx.Value}}
 	{{end}}
 }
+{{end}}
 `
 
 type TemplateValue struct {
@@ -88,9 +88,11 @@ type TemplateValue struct {
 }
 
 var objectId int
+var subObject map[string]interface{}
 
 func main() {
 	objectId = 1
+	subObject = make(map[string]interface{})
 	data, err := ioutil.ReadFile("swagger.json")
 	if err != nil {
 		log.Fatal(err)
@@ -106,12 +108,11 @@ func main() {
 	index := definitionIndex[len(definitionIndex)-1]
 	responseProperties := swagger.Definitions[index].Properties
 	//TODO 根据类型判断
-	fmt.Println(responseProperties["data"].Type)
+	// fmt.Println(responseProperties["data"].Type)
 	responseData := responseProperties["data"].Example
 	responseRes := make(map[string]interface{})
-	handleResponse(responseData, &responseRes)
+	handleResponse(responseData, &responseRes, "CommunityCleanedList")
 
-	fmt.Printf("objectId:%d \n", objectId)
 	fmt.Println(responseRes)
 	templateValue := TemplateValue{"hello", paramters, responseRes}
 	tmpl := template.New("proto")
@@ -134,34 +135,7 @@ func main() {
 	if err1 != nil {
 		log.Fatal(err1)
 	}
-	// for index, paramter := range paramters {
-	// 	fmt.Println(index)
-	// 	fmt.Println(paramter.Name)
-
-	// }
-
-	// for i,u = range  s
-	// m := docs.(map[string]interface{})
-	// for i, u := range m["paths"].(map[string]interface{}) {
-	// 	fmt.Println(i)
-	// 	fmt.Println(u)
-	// }
-
-	// for k, v := range m {
-	// 	switch vv := v.(type) {
-	// 	case string:
-	// 		fmt.Println(k, "is string", vv)
-	// 	case int:
-	// 		fmt.Println(k, "is int", vv)
-	// 	case []interface{}:
-	// 		fmt.Println(k, "is an array:")
-	// 		for i, u := range vv {
-	// 			fmt.Println(i, u)
-	// 		}
-	// 	default:
-	// 		fmt.Println(k, "is of a type I don't know how to handle")
-	// 	}
-	// }
+	fmt.Println(subObject)
 }
 func addOne(i int) int {
 	return i + 1
@@ -192,25 +166,24 @@ func getObjectID(objectID *int) int {
 	*objectID++
 	return tmp
 }
-func handleResponse(data map[string]interface{}, res *map[string]interface{}) {
+func handleResponse(data map[string]interface{}, res *map[string]interface{}, objName string) {
 	var valueType interface{}
-	//now can't support n (n>2) demensions
+	tempRes := make(map[string]interface{})
 	for key, value := range data {
 		valueType = reflect.ValueOf(value).Kind()
 		if valueType == reflect.Slice {
 			responseArr := value.([]interface{})
 			tempData := responseArr[0].(map[string]interface{})
-			// subObject := make(map[string]interface{})
-			fmt.Println(tempData)
-			// subKey = "repeated ResponseObject" + strconv.Itoa(getObjectID(&objectId))
-			// subObject[subKey] = tempData
-			// *res[key] = subObject
-			// handleResponse(tempData)
-			(*res)[key] = "repeated ResponseObject" + strconv.Itoa(getObjectID(&objectId))
+			// fmt.Println(tempData)
+			subKey := "ResponseObject" + strconv.Itoa(getObjectID(&objectId))
+			subObject[subKey] = responseArr[0]
+			handleResponse(tempData, res, subKey)
+			tempRes[key] = "repeated " + subKey
 		} else if valueType == reflect.Map {
-			(*res)[key] = "ResponseObject"
+			tempRes[key] = "ResponseObject"
 		} else {
-			(*res)[key] = "string"
+			tempRes[key] = "string"
 		}
+		(*res)[objName] = tempRes
 	}
 }
