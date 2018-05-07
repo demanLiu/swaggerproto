@@ -67,7 +67,7 @@ message RequestById {
 }
 message RequestByQuery {
 	{{range $i ,$v :=.Parameters}}
-	{{$v.Type}}  {{$v.Name}} = {{AddOne $i}}
+	{{$v.Type}}  {{$v.Name}} = {{AddOne $i}} ;
 	{{end}}
 }
 {{range $msgName,$item := .ResponseData}}
@@ -75,7 +75,7 @@ message {{$msgName}} {
 	{{$inx := Var 0}}
 	{{range $i,$v := $item}}
 		{{$inx.Set (AddOne $inx.Value)}}
-		{{$v}} {{$i}} = {{$inx.Value}}
+		{{$v}} {{$i}} = {{$inx.Value}} ;
 	{{end}}
 }
 {{end}}
@@ -101,7 +101,12 @@ func main() {
 	json.Unmarshal(data, &swagger)
 	// fmt.Println(swagger.Paths)
 	paramters := swagger.Paths["/hdmp/common/block"].Get.Parameters
-	// fmt.Println(swagger.Paths)
+	fmt.Println(paramters)
+	for pk, pv := range paramters {
+		if pv.Type == "integer" {
+			paramters[pk].Type = "string"
+		}
+	}
 	responses := swagger.Paths["/hdmp/common/block"].Get.Response["200"]
 	// fmt.Printf("%v", responses.Schema["$ref"])
 	definitionIndex := strings.Split(responses.Schema["$ref"], "/")
@@ -123,7 +128,10 @@ func main() {
 	var f *os.File
 	var err1 error
 	if checkFileIsExist(filename) { //如果文件存在
-		f, err1 = os.OpenFile(filename, os.O_APPEND, 0666) //打开文件
+		f, err1 = os.OpenFile(filename, os.O_APPEND, 0664) //打开文件
+		if err1 != nil {
+			log.Fatal(err1)
+		}
 	} else {
 		f, err1 = os.Create(filename) //创建文件
 	}
