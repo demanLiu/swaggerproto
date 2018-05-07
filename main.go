@@ -66,16 +66,16 @@ message RequestById {
     string filter = 2;
 }
 message RequestByQuery {
-	{{range $i ,$v :=.Parameters}}
-	{{$v.Type}}  {{$v.Name}} = {{AddOne $i}} ;
+	{{range $i ,$v :=.Parameters -}}
+	{{$v.Type }}  {{ $v.Name }} = {{ AddOne $i }} ;
 	{{end}}
 }
-{{range $msgName,$item := .ResponseData}}
+{{range $msgName,$item := .ResponseData -}}
 message {{$msgName}} {
-	{{$inx := Var 0}}
-	{{range $i,$v := $item}}
-		{{$inx.Set (AddOne $inx.Value)}}
-		{{$v}} {{$i}} = {{$inx.Value}} ;
+	{{$inx := Var 0 -}}
+	{{range $i,$v := $item -}}
+		{{$inx.Set (AddOne $inx.Value) -}}
+		{{$v}} {{$i}} = {{$inx.Value -}} ;
 	{{end}}
 }
 {{end}}
@@ -106,6 +106,7 @@ func main() {
 		if pv.Type == "integer" {
 			paramters[pk].Type = "string"
 		}
+		fmt.Println(pv.Name)
 	}
 	responses := swagger.Paths["/hdmp/common/block"].Get.Response["200"]
 	// fmt.Printf("%v", responses.Schema["$ref"])
