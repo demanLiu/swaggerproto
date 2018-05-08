@@ -58,14 +58,9 @@ const tpl = `
 syntax = "proto3";
 package {{.PackageName}};
 service {{.ServiceName}}Svc {
-    rpc Find (RequestById) returns ({{.ServiceName}}) {}
-    rpc Search (RequestByQuery) returns ({{.ServiceName}}List) {}
+	{{.AppendService}}
 }
-message RequestById {
-    string id = 1;
-    string filter = 2;
-}
-message RequestByQuery {
+message {{.ServiceArgName}} {
 	{{range $i ,$v :=.Parameters -}}
 	{{$v.Type }}  {{ $v.Name }} = {{ AddOne $i }};
 	{{end}}
@@ -82,10 +77,12 @@ message {{$msgName}} {
 `
 
 type TemplateValue struct {
-	PackageName  string
-	ServiceName  string
-	Parameters   []Parameter
-	ResponseData map[string]interface{}
+	PackageName    string
+	ServiceName    string
+	ServiceArgName string
+	AppendService  string
+	Parameters     []Parameter
+	ResponseData   map[string]interface{}
 }
 
 var objectId int
@@ -94,9 +91,13 @@ var subObject map[string]interface{}
 func main() {
 	objectId = 1
 	subObject = make(map[string]interface{})
-	interfaceName := "/hdmp/common/block/{id}"
+	interfaceName := "/hdmp/common/block"
 	packageName := "cleaned"
 	serviceName := "CommunityCleaned"
+	method := "Find"
+	serviceArgName := "RequestById"
+	serviceReturnName := serviceName
+	appendService := fmt.Sprintf("rpc %s (%s) returns (%s) {}", method, serviceArgName, serviceReturnName)
 	data, err := ioutil.ReadFile("swagger.json")
 	if err != nil {
 		log.Fatal(err)
@@ -119,18 +120,12 @@ func main() {
 	index := definitionIndex[len(definitionIndex)-1]
 	responseProperties := swagger.Definitions[index].Properties
 	//TODO 根据类型判断
-	// fmt.Println(responseProperties["data"].Type)
 	responseData := responseProperties["data"].Example
 	responseRes := make(map[string]interface{})
-	//TODO support post put
-	if strings.Contains(interfaceName, "{id}") {
-		handleResponse(responseData, &responseRes, serviceName)
-	} else {
-		handleResponse(responseData, &responseRes, serviceName+"List")
-	}
+	handleResponse(responseData, &responseRes, serviceReturnName)
 
 	fmt.Println(responseRes)
-	templateValue := TemplateValue{packageName, serviceName, paramters, responseRes}
+	templateValue := TemplateValue{packageName, serviceName, serviceArgName, appendService, paramters, responseRes}
 	tmpl := template.New("proto")
 	tmpl.Funcs(template.FuncMap{"AddOne": addOne, "Var": newVariable})
 	tmpl.Parse(tpl)
@@ -138,10 +133,7 @@ func main() {
 	var f *os.File
 	var err1 error
 	if checkFileIsExist(filename) { //如果文件存在
-		f, err1 = os.OpenFile(filename, os.O_APPEND, 0664) //打开文件
-		if err1 != nil {
-			log.Fatal(err1)
-		}
+		f, err1 = os.OpenFile(filename, os.O_CREATE|os.O_RDWR|os.O_APPEND, os.ModeAppend|os.ModePerm)
 	} else {
 		f, err1 = os.Create(filename) //创建文件
 	}
@@ -150,6 +142,7 @@ func main() {
 	}
 	tmpl.Execute(f, templateValue)
 	err1 = tmpl.Execute(os.Stdout, templateValue)
+
 	if err1 != nil {
 		log.Fatal(err1)
 	}
@@ -205,4 +198,3 @@ func handleResponse(data map[string]interface{}, res *map[string]interface{}, ob
 		(*res)[objName] = tempRes
 	}
 }
-
