@@ -57,9 +57,9 @@ type DeContent struct {
 const tpl = `
 syntax = "proto3";
 package {{.PackageName}};
-service CommunityCleanedSvc {
-    rpc Find (RequestById) returns (CommunityCleaned) {}
-    rpc Search (RequestByQuery) returns (CommunityCleanedList) {}
+service {{.ServiceName}}Svc {
+    rpc Find (RequestById) returns ({{.ServiceName}}) {}
+    rpc Search (RequestByQuery) returns ({{.ServiceName}}List) {}
 }
 message RequestById {
     string id = 1;
@@ -67,7 +67,7 @@ message RequestById {
 }
 message RequestByQuery {
 	{{range $i ,$v :=.Parameters -}}
-	{{$v.Type }}  {{ $v.Name }} = {{ AddOne $i }} ;
+	{{$v.Type }}  {{ $v.Name }} = {{ AddOne $i }};
 	{{end}}
 }
 {{range $msgName,$item := .ResponseData -}}
@@ -75,7 +75,7 @@ message {{$msgName}} {
 	{{$inx := Var 0 -}}
 	{{range $i,$v := $item -}}
 		{{$inx.Set (AddOne $inx.Value) -}}
-		{{$v}} {{$i}} = {{$inx.Value -}} ;
+		{{$v}} {{$i}} = {{$inx.Value -}};
 	{{end}}
 }
 {{end}}
@@ -83,6 +83,7 @@ message {{$msgName}} {
 
 type TemplateValue struct {
 	PackageName  string
+	ServiceName  string
 	Parameters   []Parameter
 	ResponseData map[string]interface{}
 }
@@ -93,6 +94,9 @@ var subObject map[string]interface{}
 func main() {
 	objectId = 1
 	subObject = make(map[string]interface{})
+	interfaceName := "/hdmp/common/block/{id}"
+	packageName := "cleaned"
+	serviceName := "CommunityCleaned"
 	data, err := ioutil.ReadFile("swagger.json")
 	if err != nil {
 		log.Fatal(err)
@@ -100,15 +104,16 @@ func main() {
 	var swagger Swagger
 	json.Unmarshal(data, &swagger)
 	// fmt.Println(swagger.Paths)
-	paramters := swagger.Paths["/hdmp/common/block"].Get.Parameters
+	// paramters := swagger.Paths["/hdmp/common/block"].Get.Parameters
+	paramters := swagger.Paths[interfaceName].Get.Parameters
 	fmt.Println(paramters)
+	//TODO other data  type
 	for pk, pv := range paramters {
 		if pv.Type == "integer" {
 			paramters[pk].Type = "string"
 		}
-		fmt.Println(pv.Name)
 	}
-	responses := swagger.Paths["/hdmp/common/block"].Get.Response["200"]
+	responses := swagger.Paths[interfaceName].Get.Response["200"]
 	// fmt.Printf("%v", responses.Schema["$ref"])
 	definitionIndex := strings.Split(responses.Schema["$ref"], "/")
 	index := definitionIndex[len(definitionIndex)-1]
@@ -117,13 +122,17 @@ func main() {
 	// fmt.Println(responseProperties["data"].Type)
 	responseData := responseProperties["data"].Example
 	responseRes := make(map[string]interface{})
-	handleResponse(responseData, &responseRes, "CommunityCleanedList")
+	//TODO support post put
+	if strings.Contains(interfaceName, "{id}") {
+		handleResponse(responseData, &responseRes, serviceName)
+	} else {
+		handleResponse(responseData, &responseRes, serviceName+"List")
+	}
 
 	fmt.Println(responseRes)
-	templateValue := TemplateValue{"hello", paramters, responseRes}
+	templateValue := TemplateValue{packageName, serviceName, paramters, responseRes}
 	tmpl := template.New("proto")
-	tmpl.Funcs(template.FuncMap{"AddOne": addOne})
-	tmpl.Funcs(template.FuncMap{"Var": newVariable})
+	tmpl.Funcs(template.FuncMap{"AddOne": addOne, "Var": newVariable})
 	tmpl.Parse(tpl)
 	filename := "./tmpProto"
 	var f *os.File
@@ -196,3 +205,4 @@ func handleResponse(data map[string]interface{}, res *map[string]interface{}, ob
 		(*res)[objName] = tempRes
 	}
 }
+
