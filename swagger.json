@@ -273,6 +273,37 @@
         }
 	},
     "definitions": {
+	       "blockDetail": {
+            "title": "city detail object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "default": 0
+                },    
+                "msg": {
+                    "type": "string",
+                    "default": "success"
+                },    
+                "data": {
+                    "type": "object",
+                    "example": {
+                        "id": "988",
+                        "name": "\u4e5d\u5821\u5ba2\u8fd0\u4e2d\u5fc3",
+                        "longitude": "120.291911",
+                        "city_id": "3",
+                        "sale_total": "57", 
+                        "uuid": "63206e0c-72c5-5095-9140-87c6f3e0da4a",
+                        "avg_price": "14962",
+                        "coordinate_set": "120.273101,30.316043;120.273065,30.314702;120.272975,30.312941;120.272867,30.311164;120.272238,30.309823;",
+                        "latitude": "30.313611",
+                        "site_from": "lianjia",
+                        "pinyin": "jiu",
+                        "district_id": ""
+                    }         
+                }         
+            },        
+            "type": "object"
+        },        
     "BlockIndex": {
             "title": "block index object",
             "properties": {
@@ -304,7 +335,7 @@
                                 "latitude": "30.313611",
                                 "longitude": "120.291911"
                             }
-                        ]
+                       ]
                     }
                 }
             },
