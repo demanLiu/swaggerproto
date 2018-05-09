@@ -91,6 +91,7 @@ var subObject map[string]interface{}
 func main() {
 	objectId = 1
 	subObject = make(map[string]interface{})
+	isAppend := true
 	interfaceName := "/hdmp/common/block"
 	packageName := "cleaned"
 	serviceName := "CommunityCleaned"
@@ -133,15 +134,31 @@ func main() {
 	var f *os.File
 	var err1 error
 	if checkFileIsExist(filename) { //如果文件存在
-		f, err1 = os.OpenFile(filename, os.O_CREATE|os.O_RDWR|os.O_APPEND, os.ModeAppend|os.ModePerm)
+		// f, err1 = os.OpenFile(filename, os.O_CREATE|os.O_RDWR|os.O_APPEND, os.ModeAppend|os.ModePerm)
+		f, err1 = os.Open(filename)
+		b1 := make([]byte, 1024)
+		for {
+			len, _ := f.Read(b1)
+			// if err != nil {
+			// 	log.Fatal(err)
+			// }
+			//读取字节数为0时跳出循环
+			if len == 0 {
+				break
+			}
+			fmt.Println(string(b1))
+		}
+		if isAppend {
+		}
 	} else {
 		f, err1 = os.Create(filename) //创建文件
 	}
 	if err1 != nil {
 		log.Fatal(err1)
 	}
+
 	tmpl.Execute(f, templateValue)
-	err1 = tmpl.Execute(os.Stdout, templateValue)
+	// err1 = tmpl.Execute(os.Stdout, templateValue)
 
 	if err1 != nil {
 		log.Fatal(err1)
