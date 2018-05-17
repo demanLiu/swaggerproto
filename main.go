@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -133,22 +135,31 @@ func main() {
 	filename := "./tmpProto"
 	var f *os.File
 	var err1 error
+	var line string
 	if checkFileIsExist(filename) { //如果文件存在
-		// f, err1 = os.OpenFile(filename, os.O_CREATE|os.O_RDWR|os.O_APPEND, os.ModeAppend|os.ModePerm)
-		f, err1 = os.Open(filename)
-		b1 := make([]byte, 1024)
+		f, err1 = os.OpenFile(filename, os.O_CREATE|os.O_RDWR, os.ModeAppend|os.ModePerm)
+		// f, err1 = os.Open(filename)
+		rd := bufio.NewReader(f)
+		var err2 error
+		var offIndex int
 		for {
-			len, _ := f.Read(b1)
-			// if err != nil {
-			// 	log.Fatal(err)
-			// }
-			//读取字节数为0时跳出循环
-			if len == 0 {
+			line, err2 = rd.ReadString('\n')
+			if err2 != nil || io.EOF == err2 {
 				break
 			}
-			fmt.Println(string(b1))
+			offIndex += len(line)
+			if strings.HasPrefix(strings.Trim(line, ""), "service") {
+				fmt.Println("----------------333------------")
+				fmt.Println(offIndex)
+				break
+			}
+			// fmt.Println(string(line))
 		}
 		if isAppend {
+			_, err3 := f.WriteAt([]byte("service111\n"), int64(offIndex)+1)
+			if err3 != nil {
+				fmt.Println(err3)
+			}
 		}
 	} else {
 		f, err1 = os.Create(filename) //创建文件
@@ -157,8 +168,8 @@ func main() {
 		log.Fatal(err1)
 	}
 
-	tmpl.Execute(f, templateValue)
-	// err1 = tmpl.Execute(os.Stdout, templateValue)
+	// tmpl.Execute(f, templateValue)
+	err1 = tmpl.Execute(os.Stdout, templateValue)
 
 	if err1 != nil {
 		log.Fatal(err1)
