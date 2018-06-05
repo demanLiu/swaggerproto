@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"html/template"
 	"io"
@@ -92,33 +93,32 @@ var objectId int
 var subObject map[string]interface{}
 
 func main() {
+	// -name=/hdmp/common/block -package=lh -service=ff  -method=xx -serviceArg=requestid  -serviceReturn ll
 	objectId = 1
 	subObject = make(map[string]interface{})
-	isAppend := true
-	interfaceName := "/hdmp/common/block"
-	packageName := "cleaned"
-	serviceName := "CommunityCleaned"
-	method := "Find"
-	serviceArgName := "RequestById"
-	serviceReturnName := serviceName
-	appendService := fmt.Sprintf("rpc %s (%s) returns (%s) {}", method, serviceArgName, serviceReturnName)
+	isAppend := flag.Bool("append", false, "append service")
+	interfaceName := flag.String("name", "/hdmp/common/block", "interface name")
+	packageName := flag.String("package", "cleaned", "package name")
+	serviceName := flag.String("service", "CommunityCleaned", "service name")
+	method := flag.String("method", "Find", "method name")
+	serviceArgName := flag.String("serviceArg", "RequestById", "service arg")
+	serviceReturnName := flag.String("serviceReturn", *serviceName, "service return name")
+	flag.Parse()
+	appendService := fmt.Sprintf("rpc %s (%s) returns (%s) {}", *method, *serviceArgName, *serviceReturnName)
 	data, err := ioutil.ReadFile("swagger.json")
 	if err != nil {
 		log.Fatal(err)
 	}
 	var swagger Swagger
 	json.Unmarshal(data, &swagger)
-	// fmt.Println(swagger.Paths)
-	// paramters := swagger.Paths["/hdmp/common/block"].Get.Parameters
-	paramters := swagger.Paths[interfaceName].Get.Parameters
-	fmt.Println(paramters)
+	paramters := swagger.Paths[*interfaceName].Get.Parameters
 	//TODO other data  type
 	for pk, pv := range paramters {
 		if pv.Type == "integer" {
 			paramters[pk].Type = "string"
 		}
 	}
-	responses := swagger.Paths[interfaceName].Get.Response["200"]
+	responses := swagger.Paths[*interfaceName].Get.Response["200"]
 	// fmt.Printf("%v", responses.Schema["$ref"])
 	definitionIndex := strings.Split(responses.Schema["$ref"], "/")
 	index := definitionIndex[len(definitionIndex)-1]
@@ -126,10 +126,8 @@ func main() {
 	//TODO 根据类型判断
 	responseData := responseProperties["data"].Example
 	responseRes := make(map[string]interface{})
-	handleResponse(responseData, &responseRes, serviceReturnName)
-
-	fmt.Println(responseRes)
-	templateValue := TemplateValue{packageName, serviceName, serviceArgName, appendService, paramters, responseRes}
+	handleResponse(responseData, &responseRes, *serviceReturnName)
+	templateValue := TemplateValue{*packageName, *serviceName, *serviceArgName, appendService, paramters, responseRes}
 	tmpl := template.New("proto")
 	tmpl.Funcs(template.FuncMap{"AddOne": addOne, "Var": newVariable})
 	tmpl.Parse(tpl)
@@ -160,7 +158,7 @@ func main() {
 			}
 			// fmt.Println(string(line))
 		}
-		if isAppend {
+		if *isAppend {
 			f.WriteAt(rest, int64(offIndex)+1)
 		}
 	} else {
